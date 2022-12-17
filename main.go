@@ -3,7 +3,36 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 )
+
+const Version = "1.0.0"
+
+type (
+	Logger interface {
+		Fatal(string, ...interface{})
+		Error(string, ...interface{})
+		Warn(string, ...interface{})
+		Info(string, ...interface{})
+		Debug(string, ...interface{})
+		Trace(string, ...interface{})
+	}
+
+	Driver struct {
+		mutex   sync.Mutex
+		mutexes map[string]*sync.Mutex
+		dir     string
+		log     Logger
+	}
+)
+
+type Options struct {
+	Logger
+}
+
+func New() {
+
+}
 
 type Address struct {
 	City    string
@@ -45,8 +74,32 @@ func main() {
 	}
 
 	records, er := db.ReadAll("users")
+
 	if er != nil {
 		fmt.Println("Error", er)
 	}
+
 	fmt.Println(records)
+
+	allusers := []User{} // array to save the data from the JSON response
+
+	for _, f := range records {
+		employeeFound := User{}
+		if err := json.Unmarshal([]byte(f), &employeeFound); err != nil { // destructuring
+			fmt.Println("Error", err)
+		}
+
+		allusers = append(allusers, employeeFound)
+	}
+
+	fmt.Println((allusers))
+
+	if err := db.Delete("user", "john"); err != nil {
+		fmt.Println("Error", err)
+	}
+
+	if err := db.Delete("user", ""); err != nil {
+		fmt.Println("Error", err)
+	}
+
 }
