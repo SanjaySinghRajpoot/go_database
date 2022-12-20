@@ -7,9 +7,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/jcelliott/lumber"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"go.opencensus.io/resource"
 	"gopkg.in/launchdarkly/go-server-sdk.v5/interfaces"
 )
@@ -95,12 +97,14 @@ func (d *Driver) Write(collection, resource string, v interfaces{}) error {
 	if err := ioutil.WriteFile(tmpPath, b, 0644); err != nil {
 		return err
 	}
+
+	return os.Rename(tmppath, fnlPath)
 }
 
 func (d *Driver) Read(collection, resource string, v interface{}) error {
      
 	if collection == "" {
-		return fmt.Errorf("Missing collection - no place to save record")
+		return fmt.Errorf("Missing collection - unable to read")
 	}
 
 	if resource == "" {
@@ -122,8 +126,33 @@ func (d *Driver) Read(collection, resource string, v interface{}) error {
 	return json.Unmarshal(b, &v)
 }
 
-func (d *Driver) ReadAll() {
+func (d *Driver) ReadAll(collection string)([]string, error) {
+   
+	if collection == "" {
+		return nil, fmt.Errorf("Missing collection from the project - unable to read")
+	}
 
+	dir := filepath.Join(d.dir, collection)
+
+	if _, err := stat(dir); err != nil {
+		return nil, err
+	}
+
+	files, _ := ioutil.ReadDir(dir)
+
+	var records []string
+    
+	for _, file := range files {
+		b, err := ioutil.ReadFile(filepath.Join(dir, file.Name()))
+
+		if err != nil {
+			return nil,err
+		}
+
+		records = append(records, string(b))
+	}
+    
+	return records, nil
 }
 
 func (d *Driver) getOrCreateMutex(collection string) *sync.Mutex {
