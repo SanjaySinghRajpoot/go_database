@@ -1,20 +1,14 @@
 package main
 
 import (
-	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/jcelliott/lumber"
-	"github.com/prometheus/client_golang/prometheus/collectors"
-	"go.opencensus.io/resource"
-	"gopkg.in/launchdarkly/go-server-sdk.v5/interfaces"
 )
 
 const Version = "1.0.0"
@@ -50,15 +44,17 @@ func New(dir string, options *Options) (*Driver, error) {
 		opts = *options
 	}
 
-	if opts.Logger = lumber.NewConsoleLogger((lumber.INFO)
-
-	driver := Driver{
-		dir: dir,
-		mutexes: make(map[string]*sync.Mutex),
-		log: opts.Logger
+	if opts.Logger == nil {
+		opts.Logger = lumber.NewConsoleLogger((lumber.INFO))
 	}
 
-	if _, err := os.Stat(dit); err == nil{
+	driver := Driver{
+		dir:     dir,
+		mutexes: make(map[string]*sync.Mutex),
+		log:     opts.Logger,
+	}
+
+	if _, err := os.Stat(dit); err == nil {
 		opts.Logger.Debug("Using '%s' (database already exists) \n", dir)
 		return &driver, nil
 	}
@@ -67,9 +63,9 @@ func New(dir string, options *Options) (*Driver, error) {
 	return &driver, os.MkdirAll(dir, 0755)
 }
 
-func (d *Driver) Write(collection, resource string, v interfaces{}) error {
-    if collection == "" {
-		return fmt.Errorf("Missing collection - no place to save record!!") 
+func (d *Driver) Write(collection, resource string, v interface{}) error {
+	if collection == "" {
+		return fmt.Errorf("Missing collection - no place to save record!!")
 	}
 
 	if resource == "" {
@@ -84,7 +80,7 @@ func (d *Driver) Write(collection, resource string, v interfaces{}) error {
 	fnlPath := filepath.Join(dir, resource+".json")
 	tmpPath := fnlPath + ".tmp"
 
-	if err := os.MkdirAll(dir, 0755); err != nil {   // 0755 is the permission to Make Dir
+	if err := os.MkdirAll(dir, 0755); err != nil { // 0755 is the permission to Make Dir
 		return err
 	}
 
@@ -93,7 +89,7 @@ func (d *Driver) Write(collection, resource string, v interfaces{}) error {
 		return err
 	}
 
-	b = append(b, byte('\n')) 
+	b = append(b, byte('\n'))
 
 	if err := ioutil.WriteFile(tmpPath, b, 0644); err != nil {
 		return err
@@ -103,7 +99,7 @@ func (d *Driver) Write(collection, resource string, v interfaces{}) error {
 }
 
 func (d *Driver) Read(collection, resource string, v interface{}) error {
-     
+
 	if collection == "" {
 		return fmt.Errorf("Missing collection - unable to read")
 	}
@@ -127,8 +123,8 @@ func (d *Driver) Read(collection, resource string, v interface{}) error {
 	return json.Unmarshal(b, &v)
 }
 
-func (d *Driver) ReadAll(collection string)([]string, error) {
-   
+func (d *Driver) ReadAll(collection string) ([]string, error) {
+
 	if collection == "" {
 		return nil, fmt.Errorf("Missing collection from the project - unable to read")
 	}
@@ -142,22 +138,22 @@ func (d *Driver) ReadAll(collection string)([]string, error) {
 	files, _ := ioutil.ReadDir(dir)
 
 	var records []string
-    
+
 	for _, file := range files {
 		b, err := ioutil.ReadFile(filepath.Join(dir, file.Name()))
 
 		if err != nil {
-			return nil,err
+			return nil, err
 		}
 
 		records = append(records, string(b))
 	}
-    
+
 	return records, nil
 }
 
 func (d *Driver) Delete(collection, resource string) error {
-    
+
 	path := filepath.Join(collection, resource)
 	mutex := d.getOrCreateMutex(collection)
 	mutex.Lock()
@@ -166,31 +162,39 @@ func (d *Driver) Delete(collection, resource string) error {
 	dir := filepath.Join(d.dir, path)
 
 	switch fi, err := stat(dir); {
-	case fi==nil, err != nil:
+
+	case fi == nil, err != nil:
 		return fmt.Errorf("unable to get the file with desired file name %v \n", path)
+
 	case fi.mode().IsDir():
 		return os.RemoveAll(dir)
+
+	case fi.Mode().IsRegular():
+		return os.RemoveAll(dir + ".json")
+
 	}
+
+	return nil
 }
 
 func (d *Driver) getOrCreateMutex(collection string) *sync.Mutex {
-    
+
 	d.mutex.Lock
 	defer d.mutex.Unlock()
 	m, err := d.mutexes[collection]
-    
+
 	if !err {
 		m = &sync.Mutex{}
 		d.mutexes[collection] = m
 	}
 }
 
-func stat(path string)(fi os.FileInfo, err error){
-	  if fi, err = os.Stat(path); os.IsNotExist(err){
+func stat(path string) (fi os.FileInfo, err error) {
+	if fi, err = os.Stat(path); os.IsNotExist(err) {
 		fi, err = os.Stat(path + ".json")
-	  }
+	}
 
-	  return 
+	return
 }
 
 type Address struct {
