@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -153,6 +154,23 @@ func (d *Driver) ReadAll(collection string)([]string, error) {
 	}
     
 	return records, nil
+}
+
+func (d *Driver) Delete(collection, resource string) error {
+    
+	path := filepath.Join(collection, resource)
+	mutex := d.getOrCreateMutex(collection)
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	dir := filepath.Join(d.dir, path)
+
+	switch fi, err := stat(dir); {
+	case fi==nil, err != nil:
+		return fmt.Errorf("unable to get the file with desired file name %v \n", path)
+	case fi.mode().IsDir():
+		return os.RemoveAll(dir)
+	}
 }
 
 func (d *Driver) getOrCreateMutex(collection string) *sync.Mutex {
