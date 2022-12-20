@@ -81,7 +81,12 @@ func (d *Driver) Write(collection, resource string, v interfaces{}) error {
 	fnlPath := filepath.Join(dir, resource+".json")
 	tmpPath := fnlPath + ".tmp"
 
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0755); err != nil {   // 0755 is the permission to Make Dir
+		return err
+	}
+
+	b, err := json.MarshalIndent(v, "", "\t")
+	if err != nil {
 		return err
 	}
 
@@ -92,16 +97,45 @@ func (d *Driver) Write(collection, resource string, v interfaces{}) error {
 	}
 }
 
-func (d *Driver) Read() error {
+func (d *Driver) Read(collection, resource string, v interface{}) error {
+     
+	if collection == "" {
+		return fmt.Errorf("Missing collection - no place to save record")
+	}
 
+	if resource == "" {
+		return fmt.Errorf("Missing resource - unable to save record")
+	}
+
+	record := filepath.Join(d.dir, collection, resource)
+
+	if _, err := stat(record); err != nil {
+		return err
+	}
+
+	b, err := ioutil.ReadFile(record + ".json")
+
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(b, &v)
 }
 
 func (d *Driver) ReadAll() {
 
 }
 
-func (d *Driver) getOrCreateMutex() *sync.Mutex {
-
+func (d *Driver) getOrCreateMutex(collection string) *sync.Mutex {
+    
+	d.mutex.Lock
+	defer d.mutex.Unlock()
+	m, err := d.mutexes[collection]
+    
+	if !err {
+		m = &sync.Mutex{}
+		d.mutexes[collection] = m
+	}
 }
 
 func stat(path string)(fi os.FileInfo, err error){
