@@ -1,0 +1,12 @@
+{
+	"Name": "Tim",
+	"Age": 23,
+	"Contact": "8899665544",
+	"Company": "My tech",
+	"Address": {
+		"City": "indore",
+		"State": "Madhya Pradesh",
+		"Country": "India",
+		"Pincode": 998855663322
+	}
+}

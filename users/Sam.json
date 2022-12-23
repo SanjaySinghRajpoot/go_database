@@ -1,0 +1,12 @@
+{
+	"Name": "Sam",
+	"Age": 24,
+	"Contact": "9966345544",
+	"Company": "techBro",
+	"Address": {
+		"City": "Chennai",
+		"State": "Chennai",
+		"Country": "India",
+		"Pincode": 998812663322
+	}
+}

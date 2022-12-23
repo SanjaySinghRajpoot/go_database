@@ -229,7 +229,7 @@ func main() {
 	}
 
 	for _, value := range employees {
-		db.write("users", value.Name, User{
+		db.Write("users", value.Name, User{
 			Name:    value.Name,
 			Age:     value.Age,
 			Contact: value.Contact,

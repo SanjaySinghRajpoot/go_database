@@ -1,0 +1,12 @@
+{
+	"Name": "Tom",
+	"Age": 28,
+	"Contact": "9924345544",
+	"Company": "techBro2",
+	"Address": {
+		"City": "City",
+		"State": "State",
+		"Country": "India",
+		"Pincode": 997612663322
+	}
+}
