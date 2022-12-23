@@ -54,7 +54,7 @@ func New(dir string, options *Options) (*Driver, error) {
 		log:     opts.Logger,
 	}
 
-	if _, err := os.Stat(dit); err == nil {
+	if _, err := os.Stat(dir); err == nil {
 		opts.Logger.Debug("Using '%s' (database already exists) \n", dir)
 		return &driver, nil
 	}
@@ -95,7 +95,7 @@ func (d *Driver) Write(collection, resource string, v interface{}) error {
 		return err
 	}
 
-	return os.Rename(tmppath, fnlPath)
+	return os.Rename(tmpPath, fnlPath)
 }
 
 func (d *Driver) Read(collection, resource string, v interface{}) error {
@@ -166,7 +166,7 @@ func (d *Driver) Delete(collection, resource string) error {
 	case fi == nil, err != nil:
 		return fmt.Errorf("unable to get the file with desired file name %v \n", path)
 
-	case fi.mode().IsDir():
+	case fi.Mode().IsDir():
 		return os.RemoveAll(dir)
 
 	case fi.Mode().IsRegular():
@@ -179,7 +179,7 @@ func (d *Driver) Delete(collection, resource string) error {
 
 func (d *Driver) getOrCreateMutex(collection string) *sync.Mutex {
 
-	d.mutex.Lock
+	d.mutex.Lock()
 	defer d.mutex.Unlock()
 	m, err := d.mutexes[collection]
 
@@ -187,6 +187,8 @@ func (d *Driver) getOrCreateMutex(collection string) *sync.Mutex {
 		m = &sync.Mutex{}
 		d.mutexes[collection] = m
 	}
+
+	return m
 }
 
 func stat(path string) (fi os.FileInfo, err error) {
@@ -216,7 +218,7 @@ func main() {
 	dir := "./"
 
 	db, er := New(dir, nil)
-	if er {
+	if er != nil {
 		fmt.Println("Error", er)
 	}
 
